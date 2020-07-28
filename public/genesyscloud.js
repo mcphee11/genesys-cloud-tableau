@@ -31,7 +31,7 @@ $(document).ready(function() {
             authUrl: config.authUrl,
             redirectUri: config.redirectUri
         };
-        tableau.connectionData = obj; //JSON.stringify(dateObj);
+        tableau.connectionData = JSON.stringify(obj); //Has to be a string for Tableau Desktop [object object] works in simulator but not desktop....
         doAuthRedirect();
     });
 
@@ -45,7 +45,7 @@ $(document).ready(function() {
             authUrl: config.authUrl,
             redirectUri: config.redirectUri
         };
-        tableau.connectionData = obj; //JSON.stringify(dateObj);
+        tableau.connectionData = JSON.stringify(obj); //Has to be a string for Tableau Desktop [object object] works in simulator but not desktop....
         tableau.connectionName = "Genesys Cloud Data";
         tableau.submit();
     });
@@ -54,15 +54,16 @@ $(document).ready(function() {
 // An on-click function for the connect to Genesys Cloud button,
 // This will redirect the user to a Genesys Cloud login
 function doAuthRedirect() {
-    var appId = tableau.connectionData.clientId;
+    var connectionData = JSON.parse(tableau.connectionData); //Convert back to JSON
+    var appId = connectionData.clientId;
     if (tableau.authPurpose === tableau.authPurposeEnum.ephemerel) {
-        appId = tableau.connectionData.clientId; // This should be Desktop
+        appId = connectionData.clientId; // This should be Desktop
     } else if (tableau.authPurpose === tableau.authPurposeEnum.enduring) {
-        appId = tableau.connectionData.clientId; // This should be the Tableau Server appID
+        appId = connectionData.clientId; // This should be the Tableau Server appID
     }
 
-    var url = tableau.connectionData.authUrl + '?response_type=code&client_id=' + appId +
-        '&redirect_uri=' + tableau.connectionData.redirectUri;
+    var url = connectionData.authUrl + '?response_type=code&client_id=' + appId +
+        '&redirect_uri=' + connectionData.redirectUri;
     window.location.href = url;
 }
 
@@ -122,7 +123,7 @@ myConnector.init = function(initCallback) {
     }
 };
 
-// Declare the data to Tableau that we are returning from Genesys Cloud
+// Declare the data to Tableau that we are returning from Genesys Cloud... Update this to your own query
 myConnector.getSchema = function(schemaCallback) {
     console.log("getSchema")
     var schema = [];
@@ -144,14 +145,15 @@ myConnector.getData = function(table, doneCallback) {
     var hasMoreData = false;
     var accessToken = tableau.password;
 
-    //The Genesys Cloud Data Query....
-    console.log(tableau.connectionData.start);
-    console.log(tableau.connectionData.end);
+    //The Genesys Cloud Data Query.... Update this to your own query
+    var connectionData = JSON.parse(tableau.connectionData); //Convert back to JSON
+    console.log(connectionData.start);
+    console.log(connectionData.end);
     var xhr = $.ajax({
-        url: "https://api." + tableau.connectionData.region + "/api/v2/analytics/conversations/aggregates/query",
+        url: "https://api." + connectionData.region + "/api/v2/analytics/conversations/aggregates/query",
         type: "POST",
         contentType: "application/json",
-        data: "{\"interval\": \"" + tableau.connectionData.start + "/" + tableau.connectionData.end + "\", \"timeZone\": \"Australia/Melbourne\", \"groupBy\": [\"conversationId\"], \"metrics\": [\"nConnected\"]}",
+        data: "{\"interval\": \"" + connectionData.start + "/" + connectionData.end + "\", \"timeZone\": \"Australia/Melbourne\", \"groupBy\": [\"conversationId\"], \"metrics\": [\"nConnected\"]}",
         beforeSend: function(xhr) {
             xhr.setRequestHeader('Authorization', 'bearer ' + accessToken);
         },
