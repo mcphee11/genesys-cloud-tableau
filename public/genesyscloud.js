@@ -18,6 +18,7 @@ async function getConfig() {
 // It also adds a link to the Genesys Cloud connect button
 $(document).ready(function() {
     var accessToken = Cookies.get("accessToken");
+    document.getElementById("accToken").value = accessToken //Moved token from cookie for support after 2019.4
     var hasAuth = accessToken && accessToken.length > 0;
     updateUIWithAuthState(hasAuth);
 
@@ -29,7 +30,8 @@ $(document).ready(function() {
             region: config.region,
             clientId: config.clientId,
             authUrl: config.authUrl,
-            redirectUri: config.redirectUri
+            redirectUri: config.redirectUri,
+            accToken: $('#accToken').val().trim() //Moved token from cookie for support after 2019.4
         };
         tableau.connectionData = JSON.stringify(obj); //Has to be a string for Tableau Desktop [object object] works in simulator but not desktop....
         doAuthRedirect();
@@ -43,7 +45,8 @@ $(document).ready(function() {
             region: config.region,
             clientId: config.clientId,
             authUrl: config.authUrl,
-            redirectUri: config.redirectUri
+            redirectUri: config.redirectUri,
+            accToken: $('#accToken').val().trim() //Moved token from cookie for support after 2019.4
         };
         tableau.connectionData = JSON.stringify(obj); //Has to be a string for Tableau Desktop [object object] works in simulator but not desktop....
         tableau.connectionName = "Genesys Cloud Data";
@@ -100,7 +103,8 @@ myConnector.init = function(initCallback) {
         // is invalid.
     }
 
-    var accessToken = Cookies.get("accessToken");
+    var connectionData = JSON.parse(tableau.connectionData);
+    var accessToken = connectionData.accToken //Moved token from cookie for support after 2019.4
     console.log("Access token is '" + accessToken + "'");
     var hasAuth = (accessToken && accessToken.length > 0) || tableau.password.length > 0;
     updateUIWithAuthState(hasAuth);
@@ -155,7 +159,7 @@ myConnector.getData = function(table, doneCallback) {
         contentType: "application/json",
         data: "{\"interval\": \"" + connectionData.start + "/" + connectionData.end + "\", \"timeZone\": \"Australia/Melbourne\", \"groupBy\": [\"conversationId\"], \"metrics\": [\"nConnected\"]}",
         beforeSend: function(xhr) {
-            xhr.setRequestHeader('Authorization', 'bearer ' + accessToken);
+            xhr.setRequestHeader('Authorization', 'bearer ' + connectionData.accToken); //Moved token from cookie for support after 2019.4
         },
         success: function(data) {
             console.log(data)
